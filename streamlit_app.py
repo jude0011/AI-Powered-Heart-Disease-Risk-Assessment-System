@@ -48,28 +48,36 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Asset Loader (with optimized pathing and memory isolation)
+# 3. Asset Loader (Bypasses disk read permissions via direct memory streaming)
 @st.cache_resource
 def load_assets():
     try:
         import io
         import joblib
+        import requests
 
-        with open('heart_model_calibrated.pkl', 'rb') as f:
-            model_bytes = io.BytesIO(f.read())
-        model = joblib.load(model_bytes)
+        # Base URL pointing directly to your GitHub repository raw files
+        base_url = "https://raw.githubusercontent.com/jude0011/AI-Powered-Heart-Disease-Risk-Assessment-System/main"
 
-        with open('scaler.pkl', 'rb') as f:
-            scaler_bytes = io.BytesIO(f.read())
-        scaler = joblib.load(scaler_bytes)
+        # 1. Load heart_model_calibrated.pkl
+        res_model = requests.get(f"{base_url}/heart_model_calibrated.pkl")
+        res_model.raise_for_status()
+        model = joblib.load(io.BytesIO(res_model.content))
 
-        with open('ood_detector.pkl', 'rb') as f:
-            ood_bytes = io.BytesIO(f.read())
-        ood_detector = joblib.load(ood_bytes)
+        # 2. Load scaler.pkl
+        res_scaler = requests.get(f"{base_url}/scaler.pkl")
+        res_scaler.raise_for_status()
+        scaler = joblib.load(io.BytesIO(res_scaler.content))
 
-        with open('shap_explainer.pkl', 'rb') as f:
-            explainer_bytes = io.BytesIO(f.read())
-        explainer = joblib.load(explainer_bytes)
+        # 3. Load ood_detector.pkl
+        res_ood = requests.get(f"{base_url}/ood_detector.pkl")
+        res_ood.raise_for_status()
+        ood_detector = joblib.load(io.BytesIO(res_ood.content))
+
+        # 4. Load shap_explainer.pkl
+        res_shap = requests.get(f"{base_url}/shap_explainer.pkl")
+        res_shap.raise_for_status()
+        explainer = joblib.load(io.BytesIO(res_shap.content))
             
         return model, scaler, ood_detector, explainer
         
@@ -77,7 +85,7 @@ def load_assets():
         import traceback
         print("DETAILED DEPLOYMENT TRACEBACK:")
         traceback.print_exc()
-        st.error(f"⚠️ Critical System Error: Missing clinical assets ({e})")
+        st.error(f"⚠️ Critical System Error: Unable to fetch clinical assets ({e})")
         return None, None, None, None
 
 model, scaler, ood_detector, explainer = load_assets()
@@ -248,7 +256,7 @@ with col_right:
         explanations = []
         for name, val in top_features[:3]:
             if val > 0:
-                st.append(f"{name} is significantly increasing cardiac risk")
+                explanations.append(f"{name} is significantly increasing cardiac risk")
             else:
                 explanations.append(f"{name} is helping reduce cardiac risk")
 
@@ -291,4 +299,4 @@ with col_footer2:
     with st.expander("System Transparency"):
         st.caption("Algorithm: Calibrated Random Forest Classifier")
         st.caption("XAI: SHAP (Kernel/Tree Explainer)")
-        st.caption("Training Source: UCI Cleveland Heart
+        st.caption("Training Source: UCI Cleveland Heart Disease Dataset")
