@@ -48,7 +48,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Asset Loader (Bypasses disk read permissions via direct memory streaming)
+# 3. Asset Loader (Streams all 4 individual assets securely from Google Drive into RAM)
 @st.cache_resource
 def load_assets():
     try:
@@ -56,26 +56,35 @@ def load_assets():
         import joblib
         import requests
 
-        # Base URL pointing directly to your GitHub repository raw files
-        base_url = "https://raw.githubusercontent.com/jude0011/AI-Powered-Heart-Disease-Risk-Assessment-System/main"
+        # Helper function to generate direct download link from a Google Drive File ID
+        def get_drive_download_url(file_id):
+            return f"https://docs.google.com/uc?export=download&id={file_id}"
+
+        # Production File Mapping containing your exact Google Drive asset IDs
+        FILE_IDS = {
+            "model": "1Q_rkA0ZITYbVFfzI0mVXQ5yWgivupe2Z",
+            "ood_detector": "1CMkFKOYxXNH4YUryQGrOkGVwY-TGTeNK",
+            "scaler": "12SoP0kAxB-EKb6x86y6o3kC_s9eFHqbj",
+            "explainer": "1uJ6mpFsCXVELlvwsaDslYJS1-9WQsqHP"
+        }
 
         # 1. Load heart_model_calibrated.pkl
-        res_model = requests.get(f"{base_url}/heart_model_calibrated.pkl")
+        res_model = requests.get(get_drive_download_url(FILE_IDS["model"]))
         res_model.raise_for_status()
         model = joblib.load(io.BytesIO(res_model.content))
 
         # 2. Load scaler.pkl
-        res_scaler = requests.get(f"{base_url}/scaler.pkl")
+        res_scaler = requests.get(get_drive_download_url(FILE_IDS["scaler"]))
         res_scaler.raise_for_status()
         scaler = joblib.load(io.BytesIO(res_scaler.content))
 
         # 3. Load ood_detector.pkl
-        res_ood = requests.get(f"{base_url}/ood_detector.pkl")
+        res_ood = requests.get(get_drive_download_url(FILE_IDS["ood_detector"]))
         res_ood.raise_for_status()
         ood_detector = joblib.load(io.BytesIO(res_ood.content))
 
         # 4. Load shap_explainer.pkl
-        res_shap = requests.get(f"{base_url}/shap_explainer.pkl")
+        res_shap = requests.get(get_drive_download_url(FILE_IDS["explainer"]))
         res_shap.raise_for_status()
         explainer = joblib.load(io.BytesIO(res_shap.content))
             
@@ -85,7 +94,8 @@ def load_assets():
         import traceback
         print("DETAILED DEPLOYMENT TRACEBACK:")
         traceback.print_exc()
-        st.error(f"⚠️ Critical System Error: Unable to fetch clinical assets ({e})")
+        st.error(f"⚠️ Critical System Error: Unable to stream folder assets from Google Drive ({e})")
+        st.info("💡 Double-check that your file sharing permissions are set to 'Anyone with the link can view' inside Google Drive.")
         return None, None, None, None
 
 model, scaler, ood_detector, explainer = load_assets()
@@ -183,7 +193,7 @@ with col_right:
     st.subheader("Explainable AI (XAI)")
     st.write("Understanding why this patient received this cardiac risk score:")
 
-    # 🌙 Detect theme (simple heuristic)
+    # 🌙 Detect theme
     is_dark = st.get_option("theme.base") == "dark"
 
     # 🎨 Adaptive colors
@@ -263,7 +273,7 @@ with col_right:
         st.info(" • " + "\n • ".join(explanations))
 
         # =========================
-        # 📊 SHAP VISUALIZATION (DARK MODE FIX)
+        # 📊 SHAP VISUALIZATION
         # =========================
         st.markdown("### 📊 Feature Impact Visualization")
 
