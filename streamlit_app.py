@@ -51,7 +51,19 @@ st.markdown("""
 # 3. Asset Loader (with optimized pathing)
 @st.cache_resource
 def load_assets():
-    try:
+   try:
+        import os
+        import stat
+
+        # List of your asset files
+        assets = ['heart_model_calibrated.pkl', 'scaler.pkl', 'ood_detector.pkl', 'shap_explainer.pkl']
+        
+        # Force-grant read permissions to all assets
+        for asset in assets:
+            if os.path.exists(asset):
+                os.chmod(asset, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+
+        # Now load them securely
         with open('heart_model_calibrated.pkl', 'rb') as f:
             model = joblib.load(f)
         with open('scaler.pkl', 'rb') as f:
@@ -60,7 +72,9 @@ def load_assets():
             ood_detector = joblib.load(f)
         with open('shap_explainer.pkl', 'rb') as f:
             explainer = joblib.load(f)
+            
         return model, scaler, ood_detector, explainer
+        
     except Exception as e:
         st.error(f"⚠️ Critical System Error: Missing clinical assets ({e})")
         return None, None, None, None
