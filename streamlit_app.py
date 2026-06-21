@@ -51,31 +51,38 @@ st.markdown("""
 # 3. Asset Loader (with optimized pathing)
 @st.cache_resource
 def load_assets():
-   try:
-        import os
-        import stat
+  try:
+        import io
+        import joblib
 
-        # List of your asset files
-        assets = ['heart_model_calibrated.pkl', 'scaler.pkl', 'ood_detector.pkl', 'shap_explainer.pkl']
-        
-        # Force-grant read permissions to all assets
-        for asset in assets:
-            if os.path.exists(asset):
-                os.chmod(asset, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
-
-        # Now load them securely
+        # Load heart_model_calibrated.pkl via an in-memory byte buffer
         with open('heart_model_calibrated.pkl', 'rb') as f:
-            model = joblib.load(f)
+            model_bytes = io.BytesIO(f.read())
+        model = joblib.load(model_bytes)
+
+        # Load scaler.pkl
         with open('scaler.pkl', 'rb') as f:
-            scaler = joblib.load(f)
+            scaler_bytes = io.BytesIO(f.read())
+        scaler = joblib.load(scaler_bytes)
+
+        # Load ood_detector.pkl
         with open('ood_detector.pkl', 'rb') as f:
-            ood_detector = joblib.load(f)
+            ood_bytes = io.BytesIO(f.read())
+        ood_detector = joblib.load(ood_bytes)
+
+        # Load shap_explainer.pkl
         with open('shap_explainer.pkl', 'rb') as f:
-            explainer = joblib.load(f)
+            explainer_bytes = io.BytesIO(f.read())
+        explainer = joblib.load(explainer_bytes)
             
         return model, scaler, ood_detector, explainer
         
     except Exception as e:
+        import traceback
+        # This will print the exact line numbers and root cause to your Render Logs
+        print("DETAILED DEPLOYMENT TRACEBACK:")
+        traceback.print_exc()
+        
         st.error(f"⚠️ Critical System Error: Missing clinical assets ({e})")
         return None, None, None, None
 
