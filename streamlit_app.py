@@ -48,7 +48,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Asset Loader (Streams all 4 individual assets securely from Google Drive into RAM)
+# 3. Enhanced Asset Loader (Handles Google Drive Large File Warnings)
 @st.cache_resource
 def load_assets():
     try:
@@ -56,11 +56,27 @@ def load_assets():
         import joblib
         import requests
 
-        # Helper function to generate direct download link from a Google Drive File ID
-        def get_drive_download_url(file_id):
-            return f"https://docs.google.com/uc?export=download&id={file_id}"
+        # Advanced function to intercept Google Drive's "Large File Anti-Virus Confirmation Screen"
+        def download_large_gdrive_file(file_id):
+            URL = "https://docs.google.com/uc?export=download"
+            session = requests.Session()
+            
+            # Send initial request to check for the virus scan confirmation screen
+            response = session.get(URL, params={'id': file_id}, stream=True)
+            
+            token = None
+            for key, value in response.cookies.items():
+                if key.startswith('download_warning'):
+                    token = value
+                    break
+            
+            # If a token cookie exists, re-request confirmation explicitly
+            if token:
+                response = session.get(URL, params={'id': file_id, 'confirm': token}, stream=True)
+                
+            return response.content
 
-        # Production File Mapping containing your exact Google Drive asset IDs
+        # Production File Mapping containing your explicit Google Drive asset IDs
         FILE_IDS = {
             "model": "1Q_rkA0ZITYbVFfzI0mVXQ5yWgivupe2Z",
             "ood_detector": "1CMkFKOYxXNH4YUryQGrOkGVwY-TGTeNK",
@@ -68,25 +84,21 @@ def load_assets():
             "explainer": "1uJ6mpFsCXVELlvwsaDslYJS1-9WQsqHP"
         }
 
-        # 1. Load heart_model_calibrated.pkl
-        res_model = requests.get(get_drive_download_url(FILE_IDS["model"]))
-        res_model.raise_for_status()
-        model = joblib.load(io.BytesIO(res_model.content))
+        # 1. Fetch and Load heart_model_calibrated.pkl
+        model_bytes = download_large_gdrive_file(FILE_IDS["model"])
+        model = joblib.load(io.BytesIO(model_bytes))
 
-        # 2. Load scaler.pkl
-        res_scaler = requests.get(get_drive_download_url(FILE_IDS["scaler"]))
-        res_scaler.raise_for_status()
-        scaler = joblib.load(io.BytesIO(res_scaler.content))
+        # 2. Fetch and Load scaler.pkl
+        scaler_bytes = download_large_gdrive_file(FILE_IDS["scaler"])
+        scaler = joblib.load(io.BytesIO(scaler_bytes))
 
-        # 3. Load ood_detector.pkl
-        res_ood = requests.get(get_drive_download_url(FILE_IDS["ood_detector"]))
-        res_ood.raise_for_status()
-        ood_detector = joblib.load(io.BytesIO(res_ood.content))
+        # 3. Fetch and Load ood_detector.pkl
+        ood_bytes = download_large_gdrive_file(FILE_IDS["ood_detector"])
+        ood_detector = joblib.load(io.BytesIO(ood_bytes))
 
-        # 4. Load shap_explainer.pkl
-        res_shap = requests.get(get_drive_download_url(FILE_IDS["explainer"]))
-        res_shap.raise_for_status()
-        explainer = joblib.load(io.BytesIO(res_shap.content))
+        # 4. Fetch and Load shap_explainer.pkl
+        shap_bytes = download_large_gdrive_file(FILE_IDS["explainer"])
+        explainer = joblib.load(io.BytesIO(shap_bytes))
             
         return model, scaler, ood_detector, explainer
         
@@ -95,7 +107,6 @@ def load_assets():
         print("DETAILED DEPLOYMENT TRACEBACK:")
         traceback.print_exc()
         st.error(f"⚠️ Critical System Error: Unable to stream folder assets from Google Drive ({e})")
-        st.info("💡 Double-check that your file sharing permissions are set to 'Anyone with the link can view' inside Google Drive.")
         return None, None, None, None
 
 model, scaler, ood_detector, explainer = load_assets()
