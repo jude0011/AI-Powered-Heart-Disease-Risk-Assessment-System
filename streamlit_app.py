@@ -52,10 +52,10 @@ st.markdown("""
 @st.cache_resource
 def load_assets():
     try:
-        model = joblib.load('src/heart_model_calibrated.pkl')
-        scaler = joblib.load('src/scaler.pkl')
-        ood_detector = joblib.load('src/ood_detector.pkl')
-        explainer = joblib.load('src/shap_explainer.pkl')
+        model = joblib.load('heart_model_calibrated.pkl')
+        scaler = joblib.load('scaler.pkl')
+        ood_detector = joblib.load('ood_detector.pkl')
+        explainer = joblib.load('shap_explainer.pkl')
         return model, scaler, ood_detector, explainer
     except Exception as e:
         st.error(f"⚠️ Critical System Error: Missing clinical assets ({e})")
