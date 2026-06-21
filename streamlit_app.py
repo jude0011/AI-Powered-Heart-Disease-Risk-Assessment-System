@@ -48,7 +48,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Asset Loader (with optimized pathing)
+# 3. Asset Loader (with optimized pathing and memory isolation)
 @st.cache_resource
 def load_assets():
     try:
@@ -82,7 +82,8 @@ def load_assets():
 
 model, scaler, ood_detector, explainer = load_assets()
 
-if model is None: st.stop()
+if model is None: 
+    st.stop()
 
 # 4. Clinical Input Mapping (Aliases for better UX)
 FEATURE_MAP = {
@@ -125,9 +126,11 @@ with st.sidebar:
         slope = st.selectbox("ST Slope", (0, 1, 2))
         ca = st.selectbox("Major Vessels Colored", (0, 1, 2, 3))
 
-    data = {'age': age, 'sex': sex, 'cp': cp, 'trestbps': trestbps, 'chol': chol,
-            'fbs': fbs, 'restecg': restecg, 'thalach': thalach, 'exang': exang,
-            'oldpeak': oldpeak, 'slope': slope, 'ca': ca, 'thal': thal}
+    data = {
+        'age': age, 'sex': sex, 'cp': cp, 'trestbps': trestbps, 'chol': chol,
+        'fbs': fbs, 'restecg': restecg, 'thalach': thalach, 'exang': exang,
+        'oldpeak': oldpeak, 'slope': slope, 'ca': ca, 'thal': thal
+    }
     input_df = pd.DataFrame(data, index=[0])
 
 # 6. Processing Engine
@@ -245,7 +248,7 @@ with col_right:
         explanations = []
         for name, val in top_features[:3]:
             if val > 0:
-                explanations.append(f"{name} is significantly increasing cardiac risk")
+                st.append(f"{name} is significantly increasing cardiac risk")
             else:
                 explanations.append(f"{name} is helping reduce cardiac risk")
 
@@ -288,4 +291,4 @@ with col_footer2:
     with st.expander("System Transparency"):
         st.caption("Algorithm: Calibrated Random Forest Classifier")
         st.caption("XAI: SHAP (Kernel/Tree Explainer)")
-        st.caption("Training Source: UCI Cleveland Heart Disease Dataset")
+        st.caption("Training Source: UCI Cleveland Heart
