@@ -51,26 +51,22 @@ st.markdown("""
 # 3. Asset Loader (with optimized pathing)
 @st.cache_resource
 def load_assets():
-  try:
+    try:
         import io
         import joblib
 
-        # Load heart_model_calibrated.pkl via an in-memory byte buffer
         with open('heart_model_calibrated.pkl', 'rb') as f:
             model_bytes = io.BytesIO(f.read())
         model = joblib.load(model_bytes)
 
-        # Load scaler.pkl
         with open('scaler.pkl', 'rb') as f:
             scaler_bytes = io.BytesIO(f.read())
         scaler = joblib.load(scaler_bytes)
 
-        # Load ood_detector.pkl
         with open('ood_detector.pkl', 'rb') as f:
             ood_bytes = io.BytesIO(f.read())
         ood_detector = joblib.load(ood_bytes)
 
-        # Load shap_explainer.pkl
         with open('shap_explainer.pkl', 'rb') as f:
             explainer_bytes = io.BytesIO(f.read())
         explainer = joblib.load(explainer_bytes)
@@ -79,10 +75,8 @@ def load_assets():
         
     except Exception as e:
         import traceback
-        # This will print the exact line numbers and root cause to your Render Logs
         print("DETAILED DEPLOYMENT TRACEBACK:")
         traceback.print_exc()
-        
         st.error(f"⚠️ Critical System Error: Missing clinical assets ({e})")
         return None, None, None, None
 
